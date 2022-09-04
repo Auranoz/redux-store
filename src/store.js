@@ -1,8 +1,22 @@
-import { legacy_createStore as createStore, compose } from 'redux';
+import { legacy_createStore as createStore, /*compose,*/ applyMiddleware } from 'redux';
 
 import reducer from './reducers';
 
-// Enhancers are not using in real practice! Below are examples just for learning...
+// MONKEY-PATCHING INSTEAD OF STORE-ENHANCERS. BAD PRACTICE
+/*
+const originalDispatch = store.dispatch;
+store.dispatch = (action) => {
+    if (typeof action === 'string') {
+        return originalDispatch({
+            type: action
+        })
+    }
+    return originalDispatch(action);
+};
+*/
+
+// Store-Enhancers are not using in real practice! Below are examples just for learning...
+/*
 const stringEnhancer = (createStore) => (...args) => {
     const store = createStore(...args);
 
@@ -30,21 +44,29 @@ const logEnhancer = (createStore) => (...args) => {
 
     return store;
 };
+*/
 
-// MONKEY-PATCHING. BAD PRACTICE
-/*
-const originalDispatch = store.dispatch;
-store.dispatch = (action) => {
+const stringMiddleware = () => (dispatch) => (action) => {
     if (typeof action === 'string') {
-        return originalDispatch({
+        return dispatch({
             type: action
         })
     }
-    return originalDispatch(action);
+    return dispatch(action);
 };
-*/
 
-const store = createStore(reducer, compose(stringEnhancer, logEnhancer));
+const logMiddleware = ({ getState }) => (next) => (action) => {
+    console.log(action.type, getState());
+    return next(action);
+};
+
+const store = createStore(
+    reducer,
+    // Connecting store enhancers:
+    /*compose(stringEnhancer, logEnhancer)*/
+    // Connecting middlewares:
+    applyMiddleware(stringMiddleware, logMiddleware)
+);
 
 store.dispatch("HELLO WORLD!");
 
